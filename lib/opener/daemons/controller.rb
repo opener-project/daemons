@@ -11,14 +11,27 @@ require 'spoon'
 module Opener
   module Daemons
     class Controller
-      attr_reader :name
+      attr_reader :name, :exec
 
       def initialize(options={})
-        @name = identify(options.fetch(:name))
+        @exec = options.fetch(:exec_path)
+        @name      = determine_name(options[:name])
         read_commandline
       end
 
+      def determine_name(name)
+        return identify(name) unless name.nil?
+        get_name_from_exec_path
+      end
+
+      def get_name_from_exec_path
+        File.basename(exec, ".rb")
+      end
+
       def read_commandline
+        args = ARGV.dup
+        @options = Opener::Daemons::OptParser.parse!(args)
+
         if ARGV[0] == 'start'
           start
         elsif ARGV[0] == 'stop'
@@ -27,12 +40,23 @@ module Opener
           stop
           start
         elsif ARGV[0] == '-h'
-          Opener::OptParser.parse!(ARGV)
+          Opener::Daemons::OptParser.parse!(ARGV)
         else
           puts "Usage: #{name} <start|stop|restart> [options]"
           puts "Or for help use: #{name} -h"
           exit!
         end
+      end
+
+      def pid_path
+        return @pid_path unless @pid_path.nil?
+        @pid_path = if @options[:pid]
+                      File.expand_path(@options[:pid])
+                    elsif @options[:pidpath]
+                      File.expand_path(File.join(@options[:pidpath], "#{name}.pid"))
+                    else
+                      "/var/run/#{File.basename($0, ".rb")}.pid"
+                    end
       end
 
       def create_pid(pid)
@@ -55,11 +79,16 @@ module Opener
             pid = pid.to_s.gsub(/[^0-9]/,'')
           end
         rescue => e
-          STDERR.puts "Error: Unable to open #{pid_path} for reading:\n\t" +
+          STDOUT.puts "Info: Unable to open #{pid_path} for reading:\n\t" +
             "(#{e.class}) #{e.message}"
         end
 
-        pid.to_i
+
+        if pid
+          return pid.to_i
+        else
+          return nil
+        end
       end
 
       def remove_pidfile
@@ -82,17 +111,18 @@ module Opener
           false
         rescue Errno::EPERM
           STDERR.puts "No permission to query #{pid}!";
+          false
         rescue => e
-          STDERR.puts "(#{e.class}) #{e.message}:\n\t" +
-            "Unable to determine status for #{pid}."
-            false
+          STDERR.puts "Error: Unable to determine status for pid: #{pid}.\n\t" +
+            "(#{e.class}) #{e.message}"
+          false
         end
       end
 
       def stop
         begin
           pid = get_pid
-          STDOUT.puts "pid : #{pid}"
+          STDOUT.puts "Stopping pid: #{pid}"
           while true do
             Process.kill("TERM", pid)
             Process.wait(pid)
@@ -102,33 +132,26 @@ module Opener
           remove_pidfile
           STDOUT.puts 'Stopped the process'
         rescue => e
-          STDERR.puts "unable to terminate process: (#{e.class}) #{e.message}"
+          STDERR.puts "Unable to terminate process: (#{e.class}) #{e.message}"
         end
       end
 
       def start
         if process_exists?
-          STDERR.puts "The process #{exec} already running. Restarting the process"
+          STDERR.puts "Error: The process #{name} already running. Restarting the process"
           stop
         end
 
+        STDOUT.puts "Starting DAEMON"
         pid = Spoon.spawnp exec, *ARGV
+        STDOUT.puts "Started DAEMON"
         create_pid(pid)
-        Process.setsid
-
-        Dir::chdir(WORK_PATH)
+        begin
+          Process.setsid
+        rescue Errno::EPERM => e
+          STDERR.puts "Process.setsid not permitted on this platform, not critical. Continuing normal operations.\n\t (#{e.class}) #{e.message}"
+        end
         File::umask(0)
-      end
-
-      def exec
-        file = File.expand_path("../../exec/#{name}.rb", __FILE__)
-        "ruby #{file} #{ARGV.join(" ")}"
-      end
-
-      def pid_path
-        return @pid_path unless @pid_path.nil?
-        path = ENV["PID_PATH"] ||= "/var/run/"
-        @pid_path = File.join(path, "#{name}.pid")
       end
 
       def identify(string)

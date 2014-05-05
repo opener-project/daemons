@@ -45,7 +45,10 @@ component:
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'opener/daemons'
-Opener::DaemonController.new(:name=>"language-identifier")
+
+exec_path = File.expand_path("exec/language-identifier.rb")
+Opener::Daemons::Controller.new(:name=>"language-identifier",
+                                :exec_path=>exec_path)
 ```
 
 After that you have to create a file that does the actual work in an "exec"
@@ -76,6 +79,29 @@ bin/language-identifier-daemon -h
 ```
 
 ## Usage
+
+Once you implemented the daemon you can use the -h option to get usage
+information. It will look like this, with the "language-identifier" strings
+replaced by your own component.
+
+```
+Usage: language-identifier.rb <start|stop|restart> [options]
+
+Specific options:
+    -i, --input INPUT_QUEUE_NAME     Input queue name
+    -o, --output OUTPUT_QUEUE_NAME   Output queue name
+    -b, --batch-size BATCH_SIZE      Request x messages at once where x is between 1 and 10
+    -w, --workers NUMBER             number of worker thread
+    -r, --readers NUMBER             number of reader threads
+    -p, --writers NUMBER             number of writer / pusher threads
+        --log FILENAME               Filename and path of logfile. Defaults to STDOUT
+        --pid FILENAME               Filename and path of pidfile. Defaults to /var/run/{filename}.rb
+        --pidpath DIRNAME            Directory where to put the PID file. Is Overwritten by --pid if that option is present
+        --debug                      Turn on debug log level
+
+Common options:
+    -h, --help                       Show this message
+```
 
 
 ## Contributing

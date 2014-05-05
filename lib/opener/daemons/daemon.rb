@@ -32,7 +32,14 @@ module Opener
         @output_buffer = Queue.new
 
         @klass = klass
-        @logger = Logger.new(options.fetch(:logger, STDOUT))
+
+        script_name = File.basename($0, ".rb")
+        @logger = Logger.new(options.fetch(:log, "#{script_name}.log"))
+        @logger.level = if options.fetch(:debug, false)
+                          Logger::DEBUG
+                        else
+                          Logger::INFO
+                        end
       end
 
       def buffer_new_messages
