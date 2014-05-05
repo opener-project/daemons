@@ -4,7 +4,6 @@ This GEM is part of the OpeNER project, which is the NLP toolchain for the rest
 of us. This particular GEM makes is possible that al OpeNER components can
 actually be launched as deamons reading from and push to Amazon SQS queues.
 
-
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -18,6 +17,21 @@ And then execute:
 Or install it yourself as:
 
     $ gem install opener-daemons
+
+
+## SQS
+
+The Opener-daemon GEM uses Amazon SQS service as a message service. In order for
+this to work properly you need an Amazon AWS account and you need to set the
+following 3 environment variables in your shell:
+
+```
+export AWS_ACCESS_KEY_ID='...'
+export AWS_SECRET_ACCESS_KEY='...'
+export AWS_REGION='...' #e.g. eu-west-1
+```
+
+To see how you specify which queues to use, checkout the usage section below.
 
 ## Implementation
 
