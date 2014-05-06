@@ -34,7 +34,7 @@ module Opener
         @klass = klass
 
         script_name = File.basename($0, ".rb")
-        @logger = Logger.new(options.fetch(:log, STDOUT)
+        @logger = Logger.new(options.fetch(:log, STDOUT))
         @logger.level = if options.fetch(:debug, false)
                           Logger::DEBUG
                         else
