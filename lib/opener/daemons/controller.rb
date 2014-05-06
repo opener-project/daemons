@@ -11,11 +11,11 @@ require 'spoon'
 module Opener
   module Daemons
     class Controller
-      attr_reader :name, :exec
+      attr_reader :name, :exec_path
 
       def initialize(options={})
-        @exec = options.fetch(:exec_path)
-        @name      = determine_name(options[:name])
+        @exec_path = options.fetch(:exec_path)
+        @name = determine_name(options[:name])
         read_commandline
       end
 
@@ -25,7 +25,7 @@ module Opener
       end
 
       def get_name_from_exec_path
-        File.basename(exec, ".rb")
+        File.basename(exec_path, ".rb")
       end
 
       def read_commandline
@@ -42,9 +42,7 @@ module Opener
         elsif ARGV[0] == '-h'
           Opener::Daemons::OptParser.parse!(ARGV)
         else
-          puts "Usage: #{name} <start|stop|restart> [options]"
-          puts "Or for help use: #{name} -h"
-          exit!
+          start_foreground
         end
       end
 
@@ -143,7 +141,7 @@ module Opener
         end
 
         STDOUT.puts "Starting DAEMON"
-        pid = Spoon.spawnp exec, *ARGV
+        pid = Spoon.spawnp exec_path, *ARGV
         STDOUT.puts "Started DAEMON"
         create_pid(pid)
         begin
@@ -152,6 +150,10 @@ module Opener
           STDERR.puts "Process.setsid not permitted on this platform, not critical. Continuing normal operations.\n\t (#{e.class}) #{e.message}"
         end
         File::umask(0)
+      end
+
+      def start_foreground
+        exec [exec_path, ARGV].flatten.join(" ")
       end
 
       def identify(string)

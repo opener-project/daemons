@@ -12,7 +12,12 @@ module Opener
       def initialize(name)
         @sqs = Aws::SQS.new
         @name = name
-        @url = sqs.get_queue_url(:queue_name=>name)[:queue_url]
+        begin
+          @url = sqs.get_queue_url(:queue_name=>name)[:queue_url]
+        rescue Aws::SQS::Errors::NonExistentQueue => e
+          STDERR.puts "Could not find queue #{name}"
+          raise
+        end
       end
 
       def send_message(message)

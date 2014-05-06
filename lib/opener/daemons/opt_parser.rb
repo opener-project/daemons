@@ -14,9 +14,12 @@ module Opener
 
       def self.process(args, call)
         options = {}
+        script_name = File.basename($0, ".rb")
 
         OptionParser.new do |opts|
-          opts.banner = "Usage: language-identifier.rb <start|stop|restart> [options]"
+          opts.banner = "Usage: #{script_name} <start|stop|restart> [options]"
+          opts.separator ""
+          opts.separator "When calling #{script_name} without <start|stop|restart> the daemon will start as a foreground process"
           opts.separator ""
           opts.separator "Specific options:"
 
