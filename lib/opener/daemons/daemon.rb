@@ -1,5 +1,6 @@
 require 'thread'
 require 'opener/daemons/sqs'
+require 'json'
 
 module Opener
   module Daemons
