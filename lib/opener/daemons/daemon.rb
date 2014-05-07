@@ -88,8 +88,13 @@ module Opener
               message = input_buffer.pop
 
               input = JSON.parse(message[:body])["input"]
+              input,* = input if input.kind_of?(Array)
+
               begin
-                output = identifier.run(input)
+                output, * = identifier.run(input)
+                if output.empty?
+                  raise "The component returned an empty response."
+                end
               rescue Exception => e
                 logger.error(e)
                 output = input
