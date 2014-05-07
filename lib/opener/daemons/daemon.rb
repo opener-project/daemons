@@ -17,13 +17,13 @@ module Opener
         @output_queue = Opener::Daemons::SQS.find(options.fetch(:output_queue))
 
         @threads = {}
-        @threads[:writers] = []
         @threads[:readers] = []
         @threads[:workers] = []
+        @threads[:writers] = []
 
         @thread_counts = {}
-        @thread_counts[:workers] = options.fetch(:workers, 1)
-        @thread_counts[:readers] = options.fetch(:readers, 5)
+        @thread_counts[:readers] = options.fetch(:readers, 1)
+        @thread_counts[:workers] = options.fetch(:workers, 5)
         @thread_counts[:writers] = options.fetch(:writers, 1)
 
         @batch_size = options.fetch(:batch_size, 10)
@@ -40,6 +40,7 @@ module Opener
                         else
                           Logger::INFO
                         end
+
       end
 
       def buffer_new_messages
@@ -117,13 +118,21 @@ module Opener
         reporter = Thread.new do
           loop do
             logger.debug "input buffer: #{input_buffer.size} \t output buffer: #{output_buffer.size}"
+
+            thread_types = [:readers, :workers, :writers]
+            thread_counts = thread_types.map do |type|
+              threads[type].select{|thread| thread.status}.count
+            end
+            zip = thread_types.zip(thread_counts)
+            logger.debug "active thread counts: #{zip}"
+
             sleep(2)
           end
         end
 
-        threads[:writers].each(&:join)
         threads[:readers].each(&:join)
         threads[:workers].each(&:join)
+        threads[:writers].each(&:join)
       end
 
       def buffer_size
