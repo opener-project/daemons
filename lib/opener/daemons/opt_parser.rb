@@ -3,17 +3,37 @@ require 'optparse'
 module Opener
   module Daemons
     class OptParser
+      attr_accessor :option_parser, :options
+
+      def initialize(&block)
+        @options = {}
+        @option_parser = construct_option_parser(options, &block)
+      end
+
+      def parse(args)
+        process(:parse, args)
+      end
+
+      def parse!(args)
+        process(:parse!, args)
+      end
 
       def self.parse(args)
-        process(args, :parse)
+        new.parse(args)
       end
 
       def self.parse!(args)
-        process(args, :parse!)
+        new.parse!(args)
       end
 
-      def self.process(args, call)
-        options = {}
+      private
+
+      def process(call, args)
+        option_parser.send(call, args)
+        return options
+      end
+
+      def construct_option_parser(options, &block)
         script_name = File.basename($0, ".rb")
 
         OptionParser.new do |opts|
@@ -21,7 +41,15 @@ module Opener
           opts.separator ""
           opts.separator "When calling #{script_name} without <start|stop|restart> the daemon will start as a foreground process"
           opts.separator ""
-          opts.separator "Specific options:"
+
+          if block_given?
+            opts.separator "Component Specific options:"
+            opts.separator ""
+            yield opts, options
+            opts.separator ""
+          end
+
+          opts.separator "Daemon options:"
 
           opts.on("-i", "--input INPUT_QUEUE_NAME", "Input queue name") do |v|
             options[:input_queue] = v
@@ -73,9 +101,7 @@ module Opener
             puts opts
             exit
           end
-        end.send(call, args)
-
-        return options
+        end
       end
     end
   end
