@@ -2,10 +2,13 @@ require 'thread'
 require 'opener/daemons/sqs'
 require 'json'
 
+Encoding.default_internal = Encoding::UTF_8
+Encoding.default_external = Encoding::UTF_8
+
 module Opener
   module Daemons
     class Daemon
-      attr_reader :batch_size,
+      attr_reader :batch_size, :buffer_size, :sleep_interval,
                   :input_queue, :output_queue,
                   :input_buffer, :output_buffer,
                   :klass,
@@ -14,27 +17,34 @@ module Opener
       attr_accessor :threads, :thread_counts
 
       def initialize(klass, options={})
+
+        @threads = {:readers=>[], :workers=>[], :writers=>[], :reporters=>[]}
+        @thread_counts = {:readers => options.fetch(:readers, 1),
+                          :workers => options.fetch(:workers, 5),
+                          :writers => options.fetch(:writers, 1)}
+
+        @relentless = options.fetch(:relentless, false)
+        @sleep_interval = options.fetch(:sleep_interval, 5)
+
+        # Initialize queues
         @input_queue  = Opener::Daemons::SQS.find(options.fetch(:input_queue))
-        @output_queue = Opener::Daemons::SQS.find(options.fetch(:output_queue))
+        if options[:output_queue]
+          @output_queue = Opener::Daemons::SQS.find(options[:output_queue])
+        end
 
-        @threads = {}
-        @threads[:readers] = []
-        @threads[:workers] = []
-        @threads[:writers] = []
-
-        @thread_counts = {}
-        @thread_counts[:readers] = options.fetch(:readers, 1)
-        @thread_counts[:workers] = options.fetch(:workers, 5)
-        @thread_counts[:writers] = options.fetch(:writers, 1)
-
-        @batch_size = options.fetch(:batch_size, 10)
-
+        # Initialize Buffers
         @input_buffer  = Queue.new
         @output_buffer = Queue.new
 
+        # Batch and Buffer size for a smooth flow.
+        @batch_size = options.fetch(:batch_size, 10)
+        @buffer_size = options[:buffer_size]
+
+        # Working component
         @klass = klass
 
         script_name = File.basename($0, ".rb")
+
         @logger = Logger.new(options.fetch(:log, STDOUT))
         @logger.level = if options.fetch(:debug, false)
                           Logger::DEBUG
@@ -42,22 +52,19 @@ module Opener
                           Logger::INFO
                         end
 
+        logger.debug(options.to_json)
       end
 
       def buffer_new_messages
-        if input_buffer.size > buffer_size
-          #logger.debug "Maximum input buffer size reached"
-          return
-        end
-
-        if output_buffer.size > buffer_size
-          #logger.debug "Maximum output buffer size reached"
-          return
-        end
+        return if input_buffer.size > buffer_size
+        return if output_buffer.size > buffer_size
 
         messages = input_queue.receive_messages(batch_size)
 
-        return if messages.nil?
+        if messages.nil?
+          sleep(sleep_interval)
+          return
+        end
         messages.each do |message|
           input_buffer << message
         end
@@ -65,21 +72,30 @@ module Opener
 
       def start
         Thread.abort_on_exception = true
-        #
-        # Load Readers
-        #
+
+        start_readers
+        start_workers
+        start_writers
+        start_reporters
+
+        threads[:readers].each(&:join)
+        threads[:workers].each(&:join)
+        threads[:writers].each(&:join)
+        threads[:reporters].each(&:join)
+      end
+
+      def start_readers
         thread_counts[:readers].times do |t|
           threads[:readers] << Thread.new do
-            logger.info "Producer #{t+1} ready for action..."
+            logger.info "Reader #{t+1} ready for action..."
             loop do
               buffer_new_messages
             end
           end
         end
+      end
 
-        #
-        # Load Workers
-        #
+      def start_workers
         thread_counts[:workers].times do |t|
           threads[:workers] << Thread.new do
             logger.info "Worker #{t+1} launching..."
@@ -96,53 +112,67 @@ module Opener
                   raise "The component returned an empty response."
                 end
               rescue Exception => e
-                logger.error(e)
-                output = input
+                if relentless?
+                  raise
+                else
+                  logger.error(e)
+                  output = input
+                end
               end
+
               output_buffer.push({ :output=>output,
-                                 :handle=>message[:receipt_handle]})
+                                   :handle=>message[:receipt_handle]})
             end
           end
         end
+      end
 
-        #
-        # Load Writers
-        #
+      def start_writers
         thread_counts[:writers].times do |t|
           threads[:writers] << Thread.new do
             logger.info "Pusher #{t+1} ready for action..."
             loop do
               message = output_buffer.pop
 
-              payload = {:input=>message[:output]}.to_json
-              output_queue.send_message(payload)
+              payload = {:input=>message[:output].force_encoding("UTF-8")}.to_json
+              output_queue.send_message(payload) if output_queue
               input_queue.delete_message(message[:handle])
             end
           end
         end
+      end
 
-        reporter = Thread.new do
+      def start_reporters
+        threads[:reporters] << Thread.new do
           loop do
-            logger.debug "input buffer: #{input_buffer.size} \t output buffer: #{output_buffer.size}"
+            log = {:buffers=>{:input=>input_buffer.size}}
+            log[:buffers][:output] = output_buffer.size if output_buffer
 
-            thread_types = [:readers, :workers, :writers]
+            logger.debug log.to_json
+            sleep(2)
+          end
+        end
+
+        threads[:reporters] << Thread.new do
+          loop do
+            thread_types = threads.keys - [:reporters]
             thread_counts = thread_types.map do |type|
               threads[type].select{|thread| thread.status}.count
             end
             zip = thread_types.zip(thread_counts)
             logger.debug "active thread counts: #{zip}"
 
-            sleep(2)
+            sleep(10)
           end
         end
-
-        threads[:readers].each(&:join)
-        threads[:workers].each(&:join)
-        threads[:writers].each(&:join)
       end
 
       def buffer_size
-        4 * batch_size
+        @buffer_size ||= (4 * batch_size)
+      end
+
+      def relentless?
+        @relentless
       end
 
     end

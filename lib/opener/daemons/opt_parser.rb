@@ -59,8 +59,16 @@ module Opener
             options[:output_queue] = v
           end
 
-          opts.on("-b", "--batch-size BATCH_SIZE", Integer, "Request x messages at once where x is between 1 and 10") do |v|
+          opts.on("--batch-size ITEMS", Integer, "Request x messages at once where x is between 1 and 10") do |v|
             options[:batch_size] = v
+          end
+
+          opts.on("--buffer-size ITEMS", Integer, "Size of input and output buffer. Defaults to 4 * batch-size") do |v|
+            options[:buffer_size] = v
+          end
+
+          opts.on("--sleep-interval TIME_IN_SECONDS", Integer, "The interval to sleep when the queue is empty (seconds)") do |v|
+            options[:sleep_interval] = v
           end
 
           opts.on("-w", "--workers NUMBER", Integer, "number of worker thread") do |v|
@@ -79,7 +87,7 @@ module Opener
             options[:log] = v
           end
 
-          opts.on("--pid FILENAME", "Filename and path of pidfile. Defaults to /var/run/{basename of current script}.pid") do |v|
+          opts.on("--pidfile FILENAME", "--pid FILENAME", "Filename and path of pidfile. Defaults to /var/run/#{script_name}.pid") do |v|
             options[:pid] = v
           end
 
@@ -89,6 +97,10 @@ module Opener
 
           opts.on("--debug", "Turn on debug log level") do |v|
             options[:debug] = true
+          end
+
+          opts.on("--relentless", "Be relentless, fail fast, fail hard, do not continue processing when encountering component errors") do |v|
+            options[:relentless] = true
           end
 
           opts.separator ""
