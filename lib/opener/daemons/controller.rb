@@ -44,15 +44,15 @@ module Opener
       def options
         return @options if @options
         args = ARGV.dup
-        @options = Opener::Daemons::OptParser.parse!(args)
+        @options = Opener::Daemons::OptParser.pre_parse!(args)
       end
 
 
       def pid_path
         return @pid_path unless @pid_path.nil?
-        @pid_path = if @options[:pid]
+        @pid_path = if options[:pid]
                       File.expand_path(@options[:pid])
-                    elsif @options[:pidpath]
+                    elsif options[:pidpath]
                       File.expand_path(File.join(@options[:pidpath], "#{name}.pid"))
                     else
                       "/var/run/#{File.basename($0, ".rb")}.pid"
@@ -79,7 +79,7 @@ module Opener
             pid = pid.to_s.gsub(/[^0-9]/,'')
           end
         rescue => e
-          STDOUT.puts "Info: Unable to open #{pid_path} for reading:\n\t" +
+          STDOUT.puts "Info: Unable to open #{pid_path} for reading while checking for existing PID:\n\t" +
             "(#{e.class}) #{e.message}"
         end
 

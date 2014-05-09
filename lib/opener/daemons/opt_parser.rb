@@ -18,6 +18,16 @@ module Opener
         process(:parse!, args)
       end
 
+      def pre_parse!(args)
+        delete_double_dash = false
+        process(:parse!, args, delete_double_dash)
+      end
+
+      def pre_parse(args)
+        delete_double_dash = false
+        process(:parse, args, delete_double_dash)
+      end
+
       def self.parse(args)
         new.parse(args)
       end
@@ -26,9 +36,18 @@ module Opener
         new.parse!(args)
       end
 
+      def self.pre_parse!(args)
+        new.pre_parse!(args)
+      end
+
+      def self.pre_parse(args)
+        new.pre_parse(args)
+      end
+
       private
 
-      def process(call, args)
+      def process(call, args, delete_double_dash=true)
+        args.delete("--") if delete_double_dash
         option_parser.send(call, args)
         return options
       end
@@ -37,7 +56,12 @@ module Opener
         script_name = File.basename($0, ".rb")
 
         OptionParser.new do |opts|
-          opts.banner = "Usage: #{script_name} <start|stop|restart> [options]"
+          if block_given?
+            opts.banner = "Usage: #{script_name} <start|stop|restart> [daemon_options] -- [component_options]"
+          else
+            opts.banner = "Usage: #{script_name} <start|stop|restart> [options]"
+          end
+
           opts.separator ""
           opts.separator "When calling #{script_name} without <start|stop|restart> the daemon will start as a foreground process"
           opts.separator ""
@@ -51,43 +75,43 @@ module Opener
 
           opts.separator "Daemon options:"
 
-          opts.on("-i", "--input INPUT_QUEUE_NAME", "Input queue name") do |v|
+          opts.on("-i", "--input QUEUE_NAME", "Input queue name") do |v|
             options[:input_queue] = v
           end
 
-          opts.on("-o", "--output OUTPUT_QUEUE_NAME", "Output queue name") do |v|
+          opts.on("-o", "--output QUEUE_NAME", "Output queue name") do |v|
             options[:output_queue] = v
           end
 
-          opts.on("--batch-size ITEMS", Integer, "Request x messages at once where x is between 1 and 10") do |v|
+          opts.on("--batch-size COUNT", Integer, "Request x messages at once where x is between 1 and 10") do |v|
             options[:batch_size] = v
           end
 
-          opts.on("--buffer-size ITEMS", Integer, "Size of input and output buffer. Defaults to 4 * batch-size") do |v|
+          opts.on("--buffer-size COUNT", Integer, "Size of input and output buffer. Defaults to 4 * batch-size") do |v|
             options[:buffer_size] = v
           end
 
-          opts.on("--sleep-interval TIME_IN_SECONDS", Integer, "The interval to sleep when the queue is empty (seconds)") do |v|
+          opts.on("--sleep-interval SECONDS", Integer, "The interval to sleep when the queue is empty (seconds)") do |v|
             options[:sleep_interval] = v
           end
 
-          opts.on("-w", "--workers NUMBER", Integer, "number of worker thread") do |v|
-            options[:workers] = v
-          end
-
-          opts.on("-r", "--readers NUMBER", Integer, "number of reader threads") do |v|
+          opts.on("-r", "--readers COUNT", Integer, "number of reader threads") do |v|
             options[:readers] = v
           end
 
-          opts.on("-p", "--writers NUMBER", Integer, "number of writer / pusher threads") do |v|
+          opts.on("-w", "--workers COUNT", Integer, "number of worker thread") do |v|
+            options[:workers] = v
+          end
+
+          opts.on("-p", "--writers COUNT", Integer, "number of writer / pusher threads") do |v|
             options[:writers] = v
           end
 
-          opts.on("--log FILENAME", "Filename and path of logfile. Defaults to STDOUT") do |v|
+          opts.on("-l", "--logfile FILENAME", "--log FILENAME", "Filename and path of logfile. Defaults to STDOUT") do |v|
             options[:log] = v
           end
 
-          opts.on("--pidfile FILENAME", "--pid FILENAME", "Filename and path of pidfile. Defaults to /var/run/#{script_name}.pid") do |v|
+          opts.on("-P", "--pidfile FILENAME", "--pid FILENAME", "Filename and path of pidfile. Defaults to /var/run/#{script_name}.pid") do |v|
             options[:pid] = v
           end
 
@@ -109,7 +133,7 @@ module Opener
 
           # No argument, shows at tail.  This will print an options summary.
           # Try it and see!
-          opts.on_tail("-h", "--help", "Show this message") do
+          opts.on_tail("-h", "--help", "Show this message. Usage: #{script_name} -h") do
             puts opts
             exit
           end
