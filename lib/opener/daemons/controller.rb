@@ -29,9 +29,6 @@ module Opener
       end
 
       def read_commandline
-        args = ARGV.dup
-        @options = Opener::Daemons::OptParser.parse!(args)
-
         if ARGV[0] == 'start'
           start
         elsif ARGV[0] == 'stop'
@@ -39,12 +36,17 @@ module Opener
         elsif ARGV[0] == 'restart'
           stop
           start
-        elsif ARGV[0] == '-h'
-          Opener::Daemons::OptParser.parse!(ARGV)
         else
           start_foreground
         end
       end
+
+      def options
+        return @options if @options
+        args = ARGV.dup
+        @options = Opener::Daemons::OptParser.parse!(args)
+      end
+
 
       def pid_path
         return @pid_path unless @pid_path.nil?
