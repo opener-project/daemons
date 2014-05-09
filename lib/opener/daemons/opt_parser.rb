@@ -66,6 +66,24 @@ module Opener
           opts.separator "When calling #{script_name} without <start|stop|restart> the daemon will start as a foreground process"
           opts.separator ""
 
+          opts.separator "Environment Variables:"
+          opts.separator ""
+
+          opts.separator "These daemons make use of Amazon SQS queues and other Amazon services."
+          opts.separator "The access to these services and other environment variables can be configured"
+          opts.separator "using a .opener-daemons-env file in the home directory of the current user."
+          opts.separator ""
+          opts.separator "It is also possible to provide the environment variables directly to the deamon."
+          opts.separator ""
+          opts.separator "For example:"
+          opts.separator "AWS_REGION='eu-west-1' #{script_name} start [other options]"
+          opts.separator ""
+          opts.separator "We advise to have the following environment variables available: "
+          opts.separator "* AWS_ACCESS_KEY_ID"
+          opts.separator "* AWS_SECRET_ACCESS_KEY"
+          opts.separator "* AWS_REGION"
+          opts.separator ""
+
           if block_given?
             opts.separator "Component Specific options:"
             opts.separator ""
