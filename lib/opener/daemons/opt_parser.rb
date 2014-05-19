@@ -54,6 +54,9 @@ module Opener
 
       def construct_option_parser(options, &block)
         script_name = File.basename($0, ".rb")
+        unless script_name.include?("-daemon")
+          script_name = "#{script_name}-daemon"
+        end
 
         OptionParser.new do |opts|
           if block_given?
