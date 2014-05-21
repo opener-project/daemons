@@ -15,8 +15,8 @@ module Opener
         begin
           @url = sqs.get_queue_url(:queue_name=>name)[:queue_url]
         rescue Aws::SQS::Errors::NonExistentQueue => e
-          STDERR.puts "Could not find queue #{name}"
-          raise
+          sqs.create_queue(:queue_name=>name)
+          retry
         end
       end
 
