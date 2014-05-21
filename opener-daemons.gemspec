@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.summary     = %q{Daemonize OpeNER components and make them read from an SQS queue. JRuby compatible.}
   spec.description = spec.summary
   spec.homepage    = "http://opener-project.github.io"
-  spec.license     = "MIT"
+  spec.license     = "Apache v2"
 
   spec.files = Dir.glob([
     'lib/**/*',
