@@ -10,7 +10,7 @@ module Opener
       end
 
       def initialize(name)
-        @sqs = Aws::SQS.new
+        @sqs = Aws::SQS::Client.new
         @name = name
         begin
           @url = sqs.get_queue_url(:queue_name=>name)[:queue_url]
@@ -30,7 +30,23 @@ module Opener
 
       def receive_messages(limit)
         result = sqs.receive_message(:queue_url=>url,
-                                     :max_number_of_messages=>limit)[:messages]
+                                     :max_number_of_messages=>limit)[:messages] rescue []
+                                            
+        result ? to_hash(result) : []                       
+                                     
+      end
+      
+      def to_hash(messages)
+        messages.map do |m| 
+          hash = m.to_hash
+          json_body = JSON.parse(hash.delete(:body))
+          hash[:body] = json_body["body"] ? json_body["body"] : json_body
+          hash
+        end
+      end
+      
+      def queue_url
+        url
       end
 
     end

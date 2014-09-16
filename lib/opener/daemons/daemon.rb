@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'thread'
 require 'opener/daemons/sqs'
 require 'json'
@@ -58,7 +60,6 @@ module Opener
       def buffer_new_messages
         return if input_buffer.size > buffer_size
         return if output_buffer.size > buffer_size
-
         messages = input_queue.receive_messages(batch_size)
 
         if messages.nil?
@@ -103,7 +104,7 @@ module Opener
             loop do
               message = input_buffer.pop
 
-              input = JSON.parse(message[:body])["input"]
+              input = message[:body]["input"]
               input,* = input if input.kind_of?(Array)
 
               begin
@@ -119,9 +120,11 @@ module Opener
                   output = input
                 end
               end
-
-              output_buffer.push({ :output=>output,
-                                   :handle=>message[:receipt_handle]})
+              message[:body].delete("input")
+              output_buffer.push({ :output=>output, 
+                                   :body => message[:body],
+                                   :handle=>message[:receipt_handle]
+                                   })
             end
           end
         end
@@ -133,10 +136,22 @@ module Opener
             logger.info "Pusher #{t+1} ready for action..."
             loop do
               message = output_buffer.pop
-
-              payload = {:input=>message[:output].force_encoding("UTF-8")}.to_json
-              output_queue.send_message(payload) if output_queue
+              callbacks = extract_callbacks(message[:body]["callbacks[]"])
+              handler = Opener::CallbackHandler.new
+              message[:body][:input] = message[:output].force_encoding("UTF-8")
+              
+              
+              unless callbacks.empty?
+                callback_url = callbacks.shift
+                message[:body][:'callbacks[]'] = callbacks
+                payload = {:body => message[:body]}
+                handler.post(callback_url, payload)
+              else
+                payload = {:body => message[:body]}
+                handler.post(output_queue.queue_url, payload)
+              end
               input_queue.delete_message(message[:handle])
+              
             end
           end
         end
@@ -173,6 +188,20 @@ module Opener
 
       def relentless?
         @relentless
+      end
+      
+      ##
+      # Returns an Array containing the callback URLs, ignoring empty values.
+      #
+      # @param [Array|String] input
+      # @return [Array]
+      #
+      def extract_callbacks(input)
+        return [] if input.nil? || input.empty?
+
+        callbacks = input.compact.reject(&:empty?)
+
+        return callbacks
       end
 
     end
