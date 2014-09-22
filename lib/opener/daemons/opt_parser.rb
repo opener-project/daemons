@@ -147,6 +147,18 @@ module Opener
           opts.on("--relentless", "Be relentless, fail fast, fail hard, do not continue processing when encountering component errors") do |v|
             options[:relentless] = true
           end
+          
+          opts.on("--bucket-name BUCKET_NAME", "The name of the bucket where the output should be stored.") do |v|
+            options[:bucket_name] = v
+          end
+          
+          opts.on("--bucket-dir BUCKET_DIR", "The directory that the output should be stored in. Requires --bucket-name option.") do |v|
+            options[:bucket_dir] = v
+          end
+          
+          opts.on("--file-suffix FILE_SUFFIX", "The suffix of the filename. Requires --bucket-name option.") do |v|
+            options[:bucket_name] = v
+          end
 
           opts.separator ""
 
