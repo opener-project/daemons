@@ -13,8 +13,10 @@ module Opener
       attr_reader :batch_size, :buffer_size, :sleep_interval,
                   :input_queue, :output_queue,
                   :input_buffer, :output_buffer,
+                  :bucket_name, :bucket_dir, :file_suffix,
                   :klass,
-                  :logger
+                  :logger,
+                  :script_name
 
       attr_accessor :threads, :thread_counts
 
@@ -33,6 +35,12 @@ module Opener
         if options[:output_queue]
           @output_queue = Opener::Daemons::SQS.find(options[:output_queue])
         end
+        
+        # Get bucket name and other bucket options, if any.
+        if @bucket_name = options[:bucket_name]
+           @bucket_dir  = options.fetch(:bucket_dir, nil)
+           @file_suffix = options.fetch(:file_suffix, nil)
+         end
 
         # Initialize Buffers
         @input_buffer  = Queue.new
@@ -45,7 +53,7 @@ module Opener
         # Working component
         @klass = klass
 
-        script_name = File.basename($0, ".rb")
+        @script_name = File.basename($0, ".rb")
 
         @logger = Logger.new(options.fetch(:log, STDOUT))
         @logger.level = if options.fetch(:debug, false)
@@ -103,8 +111,8 @@ module Opener
             identifier = klass.new
             loop do
               message = input_buffer.pop
-
-              input = message[:body]["input"]
+              
+              input = get_input(message[:body])
               input,* = input if input.kind_of?(Array)
 
               begin
@@ -138,7 +146,15 @@ module Opener
               message = output_buffer.pop
               callbacks = extract_callbacks(message[:body]["callbacks[]"])
               handler = Opener::CallbackHandler.new
-              message[:body][:input] = message[:output].force_encoding("UTF-8")
+              
+              if bucket_name
+                filename = [message[:body]["request_id"], script_name, Time.now.to_i].join("-")
+                s3 = Opener::Daemons::S3.new(bucket_name, message[:output].force_encoding("UTF-8"), filename,  bucket_dir, file_suffix)
+                s3.upload
+                message[:body][:input_url] = s3.url
+              else
+                message[:body][:input] = message[:output].force_encoding("UTF-8")
+              end
               
               
               unless callbacks.empty?
@@ -203,7 +219,11 @@ module Opener
 
         return callbacks
       end
-
+      
+      def get_input(body)
+        return body.delete("input") if body["input"]
+        return HTTPClient.new.get(body.delete("input_url")).body if body["input_url"]
+      end
     end
   end
 end
