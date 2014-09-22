@@ -17,10 +17,11 @@ Gem::Specification.new do |spec|
     'README.md'
   ]).select { |file| File.basename(file) }
 
-  spec.add_dependency 'aws-sdk-core'
+  spec.add_dependency 'aws-sdk'
   spec.add_dependency 'spoon'
   spec.add_dependency 'dotenv'
   spec.add_dependency "opener-callback-handler"
+  spec.add_dependency "httpclient"
 
   spec.add_development_dependency "bundler", "~> 1.5"
   spec.add_development_dependency "rake"
