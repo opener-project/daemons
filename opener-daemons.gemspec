@@ -1,29 +1,36 @@
 require File.expand_path('../lib/opener/daemons/version', __FILE__)
 
 Gem::Specification.new do |spec|
-  spec.name        = "opener-daemons"
+  spec.name        = 'opener-daemons'
   spec.version     = Opener::Daemons::VERSION
-  spec.authors     = ["Wilco van Duinkerken"]
-  spec.email       = ["wilco@sparkboxx.com"]
-  spec.summary     = %q{Daemonize OpeNER components and make them read from an SQS queue. JRuby compatible.}
+  spec.authors     = ['Wilco van Duinkerken', 'Olery']
+  spec.email       = ['wilco@sparkboxx.com', 'development@olery.com']
+  spec.summary     = 'Toolkit for turning OpeNER components into daemons'
   spec.description = spec.summary
-  spec.homepage    = "http://opener-project.github.io"
-  spec.license     = "Apache 2.0"
+  spec.homepage    = 'http://opener-project.github.io'
+  spec.license     = 'Apache 2.0'
+
+  spec.required_ruby_version = '>= 1.9.2'
 
   spec.files = Dir.glob([
     'lib/**/*',
     'LICENSE.txt',
     '*.gemspec',
     'README.md'
-  ]).select { |file| File.basename(file) }
+  ]).select { |file| File.file?(file) }
 
-  spec.add_dependency 'aws-sdk'
-  spec.add_dependency 'spoon'
-  spec.add_dependency 'dotenv'
-  spec.add_dependency "opener-callback-handler"
-  spec.add_dependency "httpclient"
+  spec.add_dependency 'aws-sdk', '~> 1.0'
+  spec.add_dependency 'slop', '~> 3.0'
+  spec.add_dependency 'opener-callback-handler'
+  spec.add_dependency 'newrelic_rpm'
+  spec.add_dependency 'json-schema'
+  spec.add_dependency 'rollbar', '~> 1.0'
+  spec.add_dependency 'oni', '~> 3.0'
 
-  spec.add_development_dependency "bundler", "~> 1.5"
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "rspec"
+  # https://github.com/nahi/httpclient/issues/230
+  spec.add_dependency 'httpclient', '= 2.5.2'
+
+  spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'rspec'
 end

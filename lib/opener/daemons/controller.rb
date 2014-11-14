@@ -1,166 +1,161 @@
-#
-# Original Idea by Charles Nutter
-# Copied from: https://gist.github.com/ik5/448884
-# Then adjusted.
-#
-
-require 'rubygems'
-require 'opener/daemons'
-require 'spoon'
-
 module Opener
   module Daemons
+    ##
+    # CLI controller for a component.
+    #
+    # @!attribute [r] name
+    #  The name of the daemon.
+    #  @return [String]
+    #
+    # @!attribute [r] exec_path
+    #  The path to the script to daemonize.
+    #  @return [String]
+    #
     class Controller
       attr_reader :name, :exec_path
 
-      def initialize(options={})
+      ##
+      # @param [Hash] options
+      #
+      # @option options [String] :name
+      # @option options [String] :exec_path
+      #
+      def initialize(options = {})
+        @name      = options.fetch(:name)
         @exec_path = options.fetch(:exec_path)
-        @name = determine_name(options[:name])
-        read_commandline
       end
 
-      def determine_name(name)
-        return identify(name) unless name.nil?
-        get_name_from_exec_path
+      ##
+      # Runs the CLI
+      #
+      # @param [Array] argv CLI arguments to parse.
+      #
+      def run(argv = ARGV)
+        slop = configure_slop
+
+        slop.parse(argv)
       end
 
-      def get_name_from_exec_path
-        File.basename(exec_path, ".rb")
+      ##
+      # @return [Slop]
+      #
+      def configure_slop
+        parser = OptionParser.new(name)
+
+        parser.parser.run do |opts, args|
+          command  = args.shift
+          new_args = args.reject { |arg| arg == '--' }
+
+          case command
+          when 'start'
+            start_background(opts, new_args)
+          when 'stop'
+            stop(opts)
+          when 'restart'
+            stop(opts)
+            start_background(opts, new_args)
+          else
+            start_foreground(opts, new_args)
+          end
+        end
+
+        return parser
       end
 
-      def read_commandline
-        if ARGV[0] == 'start'
-          start
-        elsif ARGV[0] == 'stop'
-          stop
-        elsif ARGV[0] == 'restart'
-          stop
-          start
+      ##
+      # Runs the daemon in the foreground.
+      #
+      # @param [Slop] options
+      # @param [Array] argv
+      #
+      def start_foreground(options, argv = [])
+        exec(setup_env(options), exec_path, *argv)
+      end
+
+      ##
+      # Starts the daemon in the background.
+      #
+      # @param [Slop] options
+      # @param [Array] argv
+      #
+      def start_background(options, argv = [])
+        pidfile = Pidfile.new(options[:pidfile])
+        pid     = Process.spawn(
+          setup_env(options),
+          exec_path,
+          *argv,
+          :out => :close,
+          :err => :close,
+          :in  => :close
+        )
+
+        pidfile.write(pid)
+
+        begin
+          # Wait until the process has _actually_ started.
+          Timeout.timeout(options[:wait]) { sleep(0.5) until pidfile.alive? }
+
+          puts "Process with Pidfile #{pidfile.read} started"
+        rescue Timeout::Error
+          pidfile.unlink
+
+          abort "Failed to start the process after #{options[:wait]} seconds"
+        end
+      end
+
+      ##
+      # Stops the daemon.
+      #
+      # @param [Slop] options
+      #
+      def stop(options)
+        pidfile = Pidfile.new(options[:pidfile])
+
+        if pidfile.alive?
+          id = pidfile.read
+
+          pidfile.terminate
+          pidfile.unlink
+
+          puts "Process with Pidfile #{id.inspect} terminated"
         else
-          start_foreground
+          abort 'Process already terminated or you are not allowed to terminate it'
         end
       end
 
-      def options
-        return @options if @options
-        args = ARGV.dup
-        @options = Opener::Daemons::OptParser.pre_parse!(args)
-      end
+      ##
+      # Returns a Hash containing the various environment variables to set for
+      # the daemon (on top of the current environment variables).
+      #
+      # @param [Slop] options
+      # @return [Hash]
+      #
+      def setup_env(options)
+        newrelic_config = File.expand_path(
+          '../../../../config/newrelic.yml',
+          __FILE__
+        )
 
+        env = ENV.to_hash.merge(
+          'INPUT_QUEUE'    => options[:input].to_s,
+          'OUTPUT_QUEUE'   => options[:output].to_s,
+          'DAEMON_THREADS' => options[:threads].to_s,
+          'OUTPUT_BUCKET'  => options[:bucket].to_s,
+          'NRCONFIG'       => newrelic_config,
+          'APP_ROOT'       => File.expand_path('../../../../', __FILE__),
+          'APP_NAME'       => name
+        )
 
-      def pid_path
-        return @pid_path unless @pid_path.nil?
-        @pid_path = if options[:pid]
-                      File.expand_path(@options[:pid])
-                    elsif options[:pidpath]
-                      File.expand_path(File.join(@options[:pidpath], "#{name}.pid"))
-                    else
-                      "/var/run/#{File.basename($0, ".rb")}.pid"
-                    end
-      end
-
-      def create_pid(pid)
-        begin
-          open(pid_path, 'w') do |f|
-            f.puts pid
-          end
-        rescue => e
-          STDERR.puts "Error: Unable to open #{pid_path} for writing:\n\t" +
-            "(#{e.class}) #{e.message}"
-          exit!
-        end
-      end
-
-      def get_pid
-        pid = false
-        begin
-          open(pid_path, 'r') do |f|
-            pid = f.readline
-            pid = pid.to_s.gsub(/[^0-9]/,'')
-          end
-        rescue => e
-          STDOUT.puts "Info: Unable to open #{pid_path} for reading while checking for existing PID:\n\t" +
-            "(#{e.class}) #{e.message}"
+        if !env['RAILS_ENV'] and env['RACK_ENV']
+          env['RAILS_ENV'] = env['RACK_ENV']
         end
 
-
-        if pid
-          return pid.to_i
-        else
-          return nil
-        end
-      end
-
-      def remove_pidfile
-        begin
-          File.unlink(pid_path)
-        rescue => e
-          STDERR.puts "ERROR: Unable to unlink #{path}:\n\t" +
-            "(#{e.class}) #{e.message}"
-          exit
-        end
-      end
-
-      def process_exists?
-        begin
-          pid = get_pid
-          return false unless pid
-          Process.kill(0, pid)
-          true
-        rescue Errno::ESRCH, TypeError # "PID is NOT running or is zombied
-          false
-        rescue Errno::EPERM
-          STDERR.puts "No permission to query #{pid}!";
-          false
-        rescue => e
-          STDERR.puts "Error: Unable to determine status for pid: #{pid}.\n\t" +
-            "(#{e.class}) #{e.message}"
-          false
-        end
-      end
-
-      def stop
-        begin
-          pid = get_pid
-          STDOUT.puts "Stopping pid: #{pid}"
-          while true do
-            Process.kill("TERM", pid)
-            Process.wait(pid)
-            sleep(0.1)
-          end
-        rescue Errno::ESRCH # no more process to kill
-          remove_pidfile
-          STDOUT.puts 'Stopped the process'
-        rescue => e
-          STDERR.puts "Unable to terminate process: (#{e.class}) #{e.message}"
-        end
-      end
-
-      def start
-        if process_exists?
-          STDERR.puts "Error: The process #{name} already running. Restarting the process"
-          stop
+        unless options[:'disable-syslog']
+          env['ENABLE_SYSLOG'] = 'true'
         end
 
-        STDOUT.puts "Starting DAEMON"
-        pid = Spoon.spawnp exec_path, *ARGV
-        STDOUT.puts "Started DAEMON"
-        create_pid(pid)
-        begin
-          Process.setsid
-        rescue Errno::EPERM => e
-          STDERR.puts "Process.setsid not permitted on this platform, not critical. Continuing normal operations.\n\t (#{e.class}) #{e.message}"
-        end
-        File::umask(0)
+        return env
       end
-
-      def start_foreground
-        exec [exec_path, ARGV].flatten.join(" ")
-      end
-
-      def identify(string)
-        string.gsub(/\W/,"-").gsub("--","-")
-      end
-    end
-  end
-end
+    end # Controller
+  end # Daemons
+end # Opener

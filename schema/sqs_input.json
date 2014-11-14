@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "opener-daemons",
+    "description": "Schema for SQS input messages",
+    "type": "object",
+    "properties": {
+        "input_url": {
+            "description": "URL to the KAF document to process",
+            "type": "string"
+        },
+
+        "identifier": {
+            "description": "A unique identifier to associate with the document",
+            "type": "string"
+        },
+
+        "callbacks": {
+            "description": "An Array of URLs to submit the result to",
+            "type": "array",
+            "minItems": 1
+        },
+
+        "metadata": {
+            "description": "Extra metadata to pass along to each output URL",
+            "type": "object",
+            "additionalProperties": true
+        }
+    },
+    "required": ["input_url", "callbacks"]
+}

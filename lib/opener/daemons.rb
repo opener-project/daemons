@@ -1,16 +1,31 @@
-require "opener/daemons/version"
-require "opener/daemons/sqs"
-require "opener/daemons/s3"
-require "opener/daemons/daemon"
-require "opener/daemons/opt_parser"
-require "opener/daemons/controller"
+# https://github.com/nahi/httpclient/issues/230
+gem 'httpclient', '= 2.5.2'
+
+require 'timeout'
+require 'syslog'
+require 'logger'
+require 'securerandom'
+
+require 'aws-sdk'
+require 'httpclient'
+require 'slop'
+require 'oni'
+require 'oni/daemons/sqs'
 require 'opener/callback_handler'
+require 'new_relic/control'
+require 'rollbar'
+require 'json-schema'
 
-require "dotenv"
-env_file = File.expand_path("~/.opener-daemons-env")
-Dotenv.load(env_file)
+require_relative 'daemons/version'
+require_relative 'daemons/daemons'
+require_relative 'daemons/option_parser'
+require_relative 'daemons/controller'
+require_relative 'daemons/pidfile'
+require_relative 'daemons/configuration'
+require_relative 'daemons/downloader'
+require_relative 'daemons/uploader'
+require_relative 'daemons/syslog'
 
-module Opener
-  module Daemons
-  end
-end
+require_relative 'daemons/mapper'
+require_relative 'daemons/worker'
+require_relative 'daemons/daemon'

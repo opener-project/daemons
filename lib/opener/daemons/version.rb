@@ -1,5 +1,5 @@
 module Opener
   module Daemons
-    VERSION = "1.3.0"
-  end
-end
+    VERSION = '2.0'
+  end # Daemons
+end # Opener
