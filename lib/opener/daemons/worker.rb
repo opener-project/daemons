@@ -42,7 +42,7 @@ module Opener
         add_newrelic_attributes
 
         input    = downloader.download(config.input_url)
-        instance = config.component.new(:kaf => true)
+        instance = config.component.new
         output   = instance.run(input)
         object   = uploader.upload(config.identifier, output, config.metadata)
 
