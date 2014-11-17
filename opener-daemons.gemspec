@@ -27,8 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'rollbar', '~> 1.0'
   spec.add_dependency 'oni', '~> 3.0'
 
-  # https://github.com/nahi/httpclient/issues/230
-  spec.add_dependency 'httpclient', '= 2.5.2'
+  spec.add_dependency 'httpclient', ['~> 2.0', '>= 2.5.3.3']
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'rake'

@@ -1,6 +1,3 @@
-# https://github.com/nahi/httpclient/issues/230
-gem 'httpclient', '= 2.5.2'
-
 require 'timeout'
 require 'syslog'
 require 'logger'
