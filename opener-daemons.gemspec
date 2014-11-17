@@ -14,6 +14,7 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir.glob([
     'lib/**/*',
+    'schema/**/*',
     'LICENSE.txt',
     '*.gemspec',
     'README.md'
