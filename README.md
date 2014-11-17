@@ -58,9 +58,12 @@ corresponding constant. For example, for the language identifier:
 
     daemon.start
 
-If the component takes extra arguments, such as a resource path, these should be
-set in the `initialize` method of the component using the actual environment
-variables.
+Extra arguments for the component can be specified as a Hash in the second
+argument of the `Daemon.new` method:
+
+    daemon = Opener::Daemons::Daemon.new(Opener::LanguageIdentifier, :kaf => false)
+
+These options will be passed to every individual instance of the component.
 
 ## Requirements
 

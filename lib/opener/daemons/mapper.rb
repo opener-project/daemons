@@ -7,8 +7,11 @@ module Opener
     # @!attribute [r] component
     #  @return [Class]
     #
+    # @!attribute [r] component_options
+    #  @return [Hash]
+    #
     class Mapper < Oni::Mapper
-      attr_reader :component
+      attr_reader :component, :component_options
 
       ##
       # The directory containing JSON schema files.
@@ -26,9 +29,11 @@ module Opener
 
       ##
       # @param [Class] component
+      # @param [Hash] component_options
       #
-      def initialize(component)
-        @component = component
+      def initialize(component, component_options = {})
+        @component         = component
+        @component_options = component_options
       end
 
       ##
@@ -40,7 +45,7 @@ module Opener
 
         validate_input!(decoded)
 
-        return Configuration.new(component, decoded)
+        return Configuration.new(component, component_options, decoded)
       end
 
       ##

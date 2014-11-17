@@ -6,6 +6,9 @@ module Opener
     # @!attribute [r] component
     #  @return [Class]
     #
+    # @!attribute [r] component_options
+    #  @return [Hash]
+    #
     # @!attribute [r] input_url
     #  @return [String]
     #
@@ -16,10 +19,13 @@ module Opener
     #  @return [Hash]
     #
     class Configuration
-      attr_reader :component, :input_url, :callbacks, :metadata
+      attr_reader :component, :component_options, :input_url, :callbacks,
+        :metadata
 
       ##
-      # @param [Class] component
+      # @param [Class] component The component to use.
+      # @param [Hash] component_options Options to pass to the component.
+      #
       # @param [Hash] options
       #
       # @option options [String] :input_url
@@ -27,8 +33,9 @@ module Opener
       # @option options [Array] :callbacks
       # @option options [Hash] :metadata
       #
-      def initialize(component, options = {})
-        @component = component
+      def initialize(component, component_options = {}, options = {})
+        @component         = component
+        @component_options = component_options
 
         options.each do |key, value|
           instance_variable_set("@#{key}", value) if respond_to?(key)
@@ -46,6 +53,15 @@ module Opener
       #
       def identifier
         return @identifier ||= SecureRandom.hex
+      end
+
+      ##
+      # Returns a new instance of the component.
+      #
+      # @return [Object]
+      #
+      def component_instance
+        return component.new(component_options)
       end
     end # Configuration
   end # Daemons

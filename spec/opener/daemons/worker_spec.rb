@@ -12,6 +12,7 @@ describe Opener::Daemons::Worker do
 
     @config = Opener::Daemons::Configuration.new(
       @component,
+      {},
       :input_url => 'http://example.com',
       :callbacks => %w{http://foo.com},
       :metadata  => {:a => 1}

@@ -7,8 +7,11 @@ module Opener
     # @!attribute [r] component
     #  @return [Class]
     #
+    # @!attribute [r] component_options
+    #  @return [Hash]
+    #
     class Daemon < Oni::Daemons::SQS
-      attr_reader :component
+      attr_reader :component, :component_options
 
       set :worker, Worker
       set :mapper, Mapper
@@ -21,9 +24,11 @@ module Opener
 
       ##
       # @param [Class] component The component to run in the worker.
+      # @param [Hash] options Extra options to pass to the component.
       #
-      def initialize(component)
-        @component = component
+      def initialize(component, options = {})
+        @component         = component
+        @component_options = options
 
         super() # keep parenthesis, parent method doesn't take arguments.
       end
@@ -58,7 +63,7 @@ module Opener
           raise ArgumentError, 'No mapper has been set in the `:mapper` option'
         end
 
-        return option(:mapper).new(component)
+        return option(:mapper).new(component, component_options)
       end
 
       ##
