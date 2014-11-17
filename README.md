@@ -93,8 +93,8 @@ Or using Bundler:
 ## Job Format
 
 Jobs should be serialized as JSON and should adhere to the JSON schema
-definition [schema/sqs_input.json](blob/master/schema/sqs_input.json). In short,
-a job is a JSON object with the following fields:
+definition [schema/sqs_input.json](schema/sqs_input.json). In short, a job is a
+JSON object with the following fields:
 
 * `input_url`: the input URL
 * `callbacks`: an array of URLs
