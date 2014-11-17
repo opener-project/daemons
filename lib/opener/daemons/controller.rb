@@ -138,7 +138,6 @@ module Opener
 
         env = ENV.to_hash.merge(
           'INPUT_QUEUE'    => options[:input].to_s,
-          'OUTPUT_QUEUE'   => options[:output].to_s,
           'DAEMON_THREADS' => options[:threads].to_s,
           'OUTPUT_BUCKET'  => options[:bucket].to_s,
           'NRCONFIG'       => newrelic_config,
