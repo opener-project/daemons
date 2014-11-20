@@ -32,12 +32,16 @@ describe Opener::Daemons::Worker do
     example 'process the input using the component' do
       @component.any_instance.should_receive(:run).with(@input)
 
+      @worker.stub(:submit_callbacks)
+
       @worker.process
     end
 
     example 'upload the output to S3' do
       @worker.uploader.should_receive(:upload)
         .with(@config.identifier, 'Output', @config.metadata)
+
+      @worker.stub(:submit_callbacks)
 
       @worker.process
     end
