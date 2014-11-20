@@ -19,15 +19,6 @@ module Opener
     end
 
     ##
-    # Returns `true` if Syslog should be enabled.
-    #
-    # @return [TrueClass|FalseClass]
-    #
-    def self.syslog?
-      return !!ENV['ENABLE_SYSLOG']
-    end
-
-    ##
     # Returns the name of the input queue to use.
     #
     # @return [String]

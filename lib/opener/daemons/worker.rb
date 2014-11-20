@@ -45,7 +45,7 @@ module Opener
         output   = config.component_instance.run(input)
         object   = uploader.upload(config.identifier, output, config.metadata)
 
-        Syslog.info(
+        Core::Syslog.info(
           "Wrote output to s3://#{Daemons.output_bucket}/#{object.key}",
           config.metadata
         )
@@ -79,7 +79,7 @@ module Opener
           :metadata   => config.metadata
         )
 
-        Syslog.info("Submitted response to #{next_url}", config.metadata)
+        Core::Syslog.info("Submitted response to #{next_url}", config.metadata)
       end
 
       private

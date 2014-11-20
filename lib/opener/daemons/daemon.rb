@@ -37,9 +37,12 @@ module Opener
       # Called before the daemon is started.
       #
       def before_start
-        Syslog.open(ENV['APP_NAME'], ::Syslog::LOG_CONS | ::Syslog::LOG_PID)
+        Core::Syslog.open(
+          ENV['APP_NAME'],
+          ::Syslog::LOG_CONS | ::Syslog::LOG_PID
+        )
 
-        Syslog.info(
+        Core::Syslog.info(
           'Starting daemon',
           :queue   => option(:queue_name),
           :threads => threads
@@ -85,7 +88,7 @@ module Opener
       def complete(message, output, timings)
         log_msg = "Finished message #{message.id}"
 
-        Syslog.info(log_msg)
+        Core::Syslog.info(log_msg)
       end
 
       ##
