@@ -11,8 +11,11 @@ module Opener
     #  The path to the script to daemonize.
     #  @return [String]
     #
+    # @!attribute [r] parser
+    #  @return [Opener::Daemons::OptionParser]
+    #
     class Controller
-      attr_reader :name, :exec_path
+      attr_reader :name, :exec_path, :parser
 
       ##
       # @param [Hash] options
@@ -23,6 +26,7 @@ module Opener
       def initialize(options = {})
         @name      = options.fetch(:name)
         @exec_path = options.fetch(:exec_path)
+        @parser    = configure_slop
       end
 
       ##
@@ -31,9 +35,7 @@ module Opener
       # @param [Array] argv CLI arguments to parse.
       #
       def run(argv = ARGV)
-        slop = configure_slop
-
-        slop.parse(argv)
+        parser.parse(argv)
       end
 
       ##
