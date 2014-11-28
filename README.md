@@ -70,6 +70,8 @@ These options will be passed to every individual instance of the component.
 * A supported Ruby version (see below)
 * Amazon SQS
 * Amazon S3
+* libarchive (for running the tests and such), on Debian/Ubuntu based systems
+  this can be installed using `sudo apt-get install libarchive-dev`
 
 The following Ruby versions are supported:
 
