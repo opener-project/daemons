@@ -86,7 +86,7 @@ module Opener
 
       def add_newrelic_attributes
         if Daemons.newrelic?
-          NewRelic::Agent.add_custom_attributes(
+          NewRelic::Agent.add_custom_parameters(
             :input_url => config.input_url,
             :callbacks => config.callbacks.join(', '),
             :metadata  => config.metadata
