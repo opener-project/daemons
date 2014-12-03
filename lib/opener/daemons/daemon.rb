@@ -75,9 +75,7 @@ module Opener
       # @param [StandardError] error
       #
       def error(error)
-        error, params = unwrap_error(error)
-
-        report_exception(error, params)
+        report_exception(error)
       end
 
       ##
@@ -89,39 +87,29 @@ module Opener
         log_msg = "Finished message #{message.id}"
 
         Core::Syslog.info(log_msg)
+
+      ensure
+        Transaction.reset_current
       end
 
       ##
       # Sends an error to Rollbar.
       #
       # @param [StandardError] error
-      # @param [Hash] parameters
       #
-      def report_exception(error, parameters = {})
+      def report_exception(error)
         if Daemons.rollbar?
           Rollbar.error(
             error,
             :active_threads   => Thread.list.count,
             :ruby_description => RUBY_DESCRIPTION,
-            :parameters       => parameters
+            :parameters       => Transaction.current.parameters
           )
         else
           raise error
         end
-      end
-
-      ##
-      # Takes either a regular error or a `Oni::WrappedError` and unwraps it,
-      # returning the original error and the parameters (if any).
-      #
-      # @param [StandardError] error
-      # @return [Array]
-      #
-      def unwrap_error(error)
-        params = error.respond_to?(:parameters) ? error.parameters : {}
-        error  = error.original_error if error.respond_to?(:original_error)
-
-        return error, params
+      ensure
+        Transaction.reset_current
       end
     end # Daemon
   end # Daemons

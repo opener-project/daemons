@@ -39,11 +39,11 @@ module Opener
       # @raise [Oni::WrappedError]
       #
       def process
-        add_newrelic_attributes
+        add_transaction_attributes
 
-        input    = downloader.download(config.input_url)
-        output   = config.component_instance.run(input)
-        object   = uploader.upload(config.identifier, output, config.metadata)
+        input  = downloader.download(config.input_url)
+        output = config.component_instance.run(input)
+        object = uploader.upload(config.identifier, output, config.metadata)
 
         Core::Syslog.info(
           "Wrote output to s3://#{Daemons.output_bucket}/#{object.key}",
@@ -51,14 +51,6 @@ module Opener
         )
 
         submit_callbacks(object)
-
-      rescue Exception => error
-        raise Oni::WrappedError.from(
-          error,
-          :input_url => config.input_url,
-          :callbacks => config.callbacks,
-          :metadata  => config.metadata
-        )
       end
 
       ##
@@ -84,14 +76,13 @@ module Opener
 
       private
 
-      def add_newrelic_attributes
-        if Daemons.newrelic?
-          NewRelic::Agent.add_custom_parameters(
-            :input_url => config.input_url,
-            :callbacks => config.callbacks.join(', '),
-            :metadata  => config.metadata
-          )
-        end
+      def add_transaction_attributes
+        Transaction.current.add_parameters(
+          :input_url  => config.input_url,
+          :identifier => config.identifier,
+          :callbacks  => config.callbacks,
+          :metadata   => config.metadata
+        )
       end
 
       if Daemons.newrelic?

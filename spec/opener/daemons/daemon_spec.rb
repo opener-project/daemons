@@ -10,26 +10,48 @@ describe Opener::Daemons::Daemon do
     @daemon.stub(:run_thread).and_return(true)
   end
 
-  context 'unwrapping errors' do
+  after do
+    Thread.current[Opener::Daemons::Transaction::THREAD_KEY] = nil
+  end
+
+  context '#complete' do
     before do
-      @original = StandardError.new('foo')
-      @params   = {:foo => :bar}
+      @message = double(:message, :id => 123)
+      @timings = double(:timings)
     end
 
-    example 'unwrap a regular error' do
-      error, params = @daemon.unwrap_error(@original)
+    example 'log data to Syslog upon completion' do
+      Opener::Core::Syslog.should_receive(:info)
+        .with('Finished message 123')
 
-      error.should  == @original
-      params.should == {}
+      @daemon.complete(@message, 'Done', @timings)
     end
 
-    example 'unwrap a wrapped error' do
-      input = Oni::WrappedError.from(@original, @params)
+    example 'reset the current transaction' do
+      Opener::Daemons::Transaction.should_receive(:reset_current)
 
-      error, params = @daemon.unwrap_error(input)
+      @daemon.complete(@message, 'Done', @timings)
+    end
+  end
 
-      error.should  == @original
-      params.should == @params
+  context '#report_exception' do
+    before do
+      @error = StandardError.new('foo')
+    end
+
+    example 'report errors using Rollbar' do
+      Opener::Daemons.stub(:rollbar?).and_return(true)
+
+      Rollbar.should_receive(:error)
+        .with(@error, an_instance_of(Hash))
+
+      @daemon.report_exception(@error)
+    end
+
+    example 'reset the current transaction' do
+      Opener::Daemons::Transaction.should_receive(:reset_current)
+
+      -> { @daemon.report_exception(@error) }.should raise_error
     end
   end
 end

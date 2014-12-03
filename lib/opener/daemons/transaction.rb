@@ -10,19 +10,26 @@ module Opener
       attr_reader :parameters
 
       ##
+      # The name of the key to store the current transaction in.
+      #
+      # @return [Symbol]
+      #
+      THREAD_KEY = :opener_daemons_transaction
+
+      ##
       # Returns the current transaction.
       #
       # @return [Opener::Daemons::Transaction]
       #
       def self.current
-        return Thread.current[:opener_daemons_transaction] ||= new
+        return Thread.current[THREAD_KEY] ||= new
       end
 
       ##
       # Removes the current transaction
       #
       def self.reset_current
-        Thread.current[:opener_daemons_transaction] = nil
+        Thread.current[THREAD_KEY] = nil
       end
 
       def initialize
