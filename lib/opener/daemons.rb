@@ -20,6 +20,7 @@ require_relative 'daemons/pidfile'
 require_relative 'daemons/configuration'
 require_relative 'daemons/downloader'
 require_relative 'daemons/uploader'
+require_relative 'daemons/transaction'
 
 require_relative 'daemons/mapper'
 require_relative 'daemons/worker'
