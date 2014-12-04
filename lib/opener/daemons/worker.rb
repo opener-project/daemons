@@ -41,8 +41,35 @@ module Opener
       def process
         add_transaction_attributes
 
-        input  = downloader.download(config.input_url)
-        output = config.component_instance.run(input)
+        begin
+          output = run_component
+          object = upload_output(output)
+
+          submit_callbacks(object)
+
+        # Unsupported languages are handled in a different manner as they can
+        # occur quite often. In these cases we _do_ want the data to be sent
+        # to the final callback URL (skipping whatever comes before it) so it
+        # can act upon it.
+        rescue Core::UnsupportedLanguageError
+          handle_unsupported_language
+        end
+      end
+
+      ##
+      # @return [String]
+      #
+      def run_component
+        input = downloader.download(config.input_url)
+
+        return config.component_instance.run(input)
+      end
+
+      ##
+      # @param [String] output
+      # @return [AWS::S3::S3Object]
+      #
+      def upload_output(output)
         object = uploader.upload(config.identifier, output, config.metadata)
 
         Core::Syslog.info(
@@ -50,7 +77,7 @@ module Opener
           config.metadata
         )
 
-        submit_callbacks(object)
+        return object
       end
 
       ##
@@ -72,6 +99,25 @@ module Opener
         )
 
         Core::Syslog.info("Submitted response to #{next_url}", config.metadata)
+      end
+
+      ##
+      # Sends the unsupported input to the last callback URL.
+      #
+      def handle_unsupported_language
+        last_url = config.callbacks.last
+
+        callback_handler.post(
+          last_url,
+          :input_url  => config.input_url,
+          :identifier => config.identifier,
+          :metadata   => config.metadata
+        )
+
+        Core::Syslog.info(
+          "Submitted input with an unsupported language to #{last_url}",
+          config.metadata
+        )
       end
 
       private

@@ -52,6 +52,15 @@ describe Opener::Daemons::Worker do
 
       @worker.process
     end
+
+    example 'submit documents with unsupported languages to the last callback' do
+      @worker.should_receive(:handle_unsupported_language)
+
+      @worker.stub(:run_component)
+        .and_raise(Opener::Core::UnsupportedLanguageError, 'bacon')
+
+      @worker.process
+    end
   end
 
   context '#submit_callbacks' do
@@ -67,6 +76,21 @@ describe Opener::Daemons::Worker do
         .with('http://foo.com', hash)
 
       @worker.submit_callbacks(@s3_object)
+    end
+  end
+
+  context '#handle_unsupported_language' do
+    example 'send the input URL to the last callback URL' do
+      hash = {
+        :input_url  => @config.input_url,
+        :identifier => @config.identifier,
+        :metadata   => @config.metadata
+      }
+
+      @worker.callback_handler.should_receive(:post)
+        .with('http://foo.com', hash)
+
+      @worker.handle_unsupported_language
     end
   end
 end
