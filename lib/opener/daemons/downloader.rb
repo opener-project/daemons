@@ -29,7 +29,7 @@ module Opener
           )
         end
 
-        return resp.body
+        return resp.body.force_encoding('UTF-8')
       end
     end # Downloader
   end # Daemons
