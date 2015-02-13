@@ -11,6 +11,8 @@ module Opener
 
       def initialize
         @http = HTTPClient.new
+
+        @http.ssl_config.options |= OpenSSL::SSL::OP_NO_SSLv3
       end
 
       ##
