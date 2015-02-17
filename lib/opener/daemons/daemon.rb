@@ -53,6 +53,12 @@ module Opener
         Daemons.configure_rollbar
 
         NewRelic::Agent.manual_start if Daemons.newrelic?
+
+        # AWS SDK autoloads everything, but this causes constant missing errors
+        # on both JRuby and Rubinius from time to time.
+        AWS.eager_autoload!(AWS::Core)
+        AWS.eager_autoload!(AWS::SQS)
+        AWS.eager_autoload!(AWS::S3)
       end
 
       ##
