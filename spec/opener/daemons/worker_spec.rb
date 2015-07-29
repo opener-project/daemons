@@ -22,7 +22,7 @@ describe Opener::Daemons::Worker do
     @input     = 'Hello'
     @s3_object = AWS::S3::S3Object.new('foo', 'bar')
 
-    @s3_object.stub(:url_for).and_return('http://s3-example')
+    @s3_object.stub(:public_url).and_return('http://s3-example')
 
     @worker.downloader.stub(:download).and_return(@input)
     @worker.uploader.stub(:upload).and_return(@s3_object)

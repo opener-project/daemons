@@ -15,10 +15,11 @@ module Opener
       #
       def upload(identifier, document, metadata = {})
         object = create(
-          "#{identifier}.xml",
+          "#{SecureRandom.hex}/#{identifier}.xml",
           document,
           :metadata     => metadata,
-          :content_type => 'application/xml'
+          :content_type => 'application/xml',
+          :acl          => :public_read
         )
 
         return object

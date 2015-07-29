@@ -8,10 +8,11 @@ describe Opener::Daemons::Uploader do
   context '#upload' do
     example 'upload a document to S3' do
       @uploader.should_receive(:create).with(
-        'foo.xml',
+        %r{[a-zA-Z0-9]+/foo\.xml},
         'Hello',
         :metadata     => {:a => 10},
-        :content_type => 'application/xml'
+        :content_type => 'application/xml',
+        :acl          => :public_read
       )
 
       @uploader.upload('foo', 'Hello', :a => 10)

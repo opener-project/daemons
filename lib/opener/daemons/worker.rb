@@ -88,7 +88,7 @@ module Opener
       def submit_callbacks(object)
         urls      = config.callbacks.dup
         next_url  = urls.shift
-        input_url = object.url_for(:read, :expires => 86400)
+        input_url = object.public_url.to_s
 
         callback_handler.post(
           next_url,
