@@ -30,7 +30,13 @@ module Opener
       # @return [AWS::S3::S3Object]
       #
       def create(*args)
-        return bucket.objects.create(*args)
+        object = bucket.objects.create(*args)
+
+        if object.is_a?(AWS::S3::ObjectVersion)
+          object = object.object
+        end
+
+        return object
       end
 
       ##

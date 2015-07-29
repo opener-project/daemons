@@ -18,4 +18,27 @@ describe Opener::Daemons::Uploader do
       @uploader.upload('foo', 'Hello', :a => 10)
     end
   end
+
+  context '#create' do
+    example 'return an S3Object' do
+      object = AWS::S3::S3Object.new('foo', 'bar')
+
+      AWS::S3::ObjectCollection.any_instance
+        .should_receive(:create)
+        .and_return(object)
+
+      @uploader.create('foo.xml').should == object
+    end
+
+    example 'return an S3Object when versioning is enabled' do
+      object  = AWS::S3::S3Object.new('foo', 'bar')
+      version = AWS::S3::ObjectVersion.new(object, '123')
+
+      AWS::S3::ObjectCollection.any_instance
+        .should_receive(:create)
+        .and_return(version)
+
+      @uploader.create('foo.xml').should == object
+    end
+  end
 end
