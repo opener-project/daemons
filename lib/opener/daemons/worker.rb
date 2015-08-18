@@ -133,7 +133,10 @@ module Opener
 
       if Daemons.newrelic?
         add_transaction_tracer(:process, :category => :task)
-        add_method_tracer(:download_input)
+
+        add_method_tracer(:run_component)
+        add_method_tracer(:upload_output)
+        add_method_tracer(:submit_callbacks)
       end
     end # Worker
   end # Daemons
