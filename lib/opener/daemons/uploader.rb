@@ -10,10 +10,16 @@ module Opener
       #
       # @return [Aws::S3::Object]
       def upload(identifier, document, metadata = {})
+        converted_metadata = {}
+
+        metadata.each do |key, value|
+          converted_metadata[key.to_s] = value.to_s
+        end
+
         object = create(
           "#{SecureRandom.hex}/#{identifier}.xml",
           document,
-          :metadata     => metadata,
+          :metadata     => converted_metadata,
           :content_type => 'application/xml',
           :acl          => 'public-read'
         )

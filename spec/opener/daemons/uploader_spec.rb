@@ -13,7 +13,7 @@ describe Opener::Daemons::Uploader do
       @uploader.should_receive(:create).with(
         '123/foo.xml',
         'Hello',
-        :metadata     => {:a => 10},
+        :metadata     => {'a' => '10'},
         :content_type => 'application/xml',
         :acl          => 'public-read'
       )
