@@ -17,20 +17,19 @@ describe Opener::Daemons::Daemon do
   context '#complete' do
     before do
       @message = double(:message, :id => 123)
-      @timings = double(:timings)
     end
 
     example 'log data to Syslog upon completion' do
       Opener::Core::Syslog.should_receive(:info)
         .with('Finished message 123')
 
-      @daemon.complete(@message, 'Done', @timings)
+      @daemon.complete(@message, 'Done')
     end
 
     example 'reset the current transaction' do
       Opener::Daemons::Transaction.should_receive(:reset_current)
 
-      @daemon.complete(@message, 'Done', @timings)
+      @daemon.complete(@message, 'Done')
     end
   end
 
