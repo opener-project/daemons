@@ -1,7 +1,7 @@
 require 'timeout'
 require 'securerandom'
 
-require 'aws-sdk'
+require 'aws-sdk-v1'
 require 'httpclient'
 require 'slop'
 require 'oni'
