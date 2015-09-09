@@ -53,6 +53,8 @@ module Opener
         Daemons.configure_rollbar
 
         NewRelic::Agent.manual_start if Daemons.newrelic?
+
+        Aws.eager_autoload!(:services => %w{S3 SQS})
       end
 
       ##
