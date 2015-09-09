@@ -86,7 +86,7 @@ module Opener
       # @param [Benchmark::Tms] timings
       #
       def complete(message, output)
-        log_msg = "Finished message #{message.id}"
+        log_msg = "Finished message #{message.message_id}"
 
         Core::Syslog.info(log_msg)
 
