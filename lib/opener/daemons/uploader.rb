@@ -1,56 +1,42 @@
 module Opener
   module Daemons
-    ##
     # Class for uploading KAF documents to Amazon S3.
-    #
     class Uploader
-      ##
       # Uploads the given KAF document.
       #
       # @param [String] identifier
       # @param [String] document
       # @param [Hash] metadata description
       #
-      # @return [AWS::S3::S3Object]
-      #
+      # @return [Aws::S3::Object]
       def upload(identifier, document, metadata = {})
         object = create(
           "#{SecureRandom.hex}/#{identifier}.xml",
           document,
           :metadata     => metadata,
           :content_type => 'application/xml',
-          :acl          => :public_read
+          :acl          => 'public-read'
         )
 
         return object
       end
 
-      ##
-      # @param [Array] args
-      # @return [AWS::S3::S3Object]
-      #
-      def create(*args)
-        object = bucket.objects.create(*args)
-
-        if object.is_a?(AWS::S3::ObjectVersion)
-          object = object.object
-        end
-
-        return object
+      # @param [String] key
+      # @param [String] body
+      # @param [Hash] options
+      # @return [Aws::S3::Object]
+      def create(key, body, options = {})
+        bucket.put_object(options.merge(:key  => key, :body => body))
       end
 
-      ##
-      # @return [AWS::S3.new]
-      #
+      # @return [Aws::S3::Resource]
       def s3
-        return @s3 ||= AWS::S3.new
+        @s3 ||= Aws::S3::Resource.new
       end
 
-      ##
-      # @return [AWS::S3::Bucket]
-      #
+      # @return [Aws::S3::Bucket]
       def bucket
-        return @bucket ||= s3.buckets[Daemons.output_bucket]
+        @bucket ||= s3.bucket(Daemons.output_bucket)
       end
     end # Uploader
   end # Daemons

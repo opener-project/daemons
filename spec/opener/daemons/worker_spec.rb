@@ -20,7 +20,7 @@ describe Opener::Daemons::Worker do
 
     @worker    = described_class.new(@config)
     @input     = 'Hello'
-    @s3_object = AWS::S3::S3Object.new('foo', 'bar')
+    @s3_object = Aws::S3::Object.new('foo', 'bar')
 
     @s3_object.stub(:public_url).and_return('http://s3-example')
 

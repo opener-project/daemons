@@ -51,7 +51,7 @@ describe Opener::Daemons::Daemon do
     example 'reset the current transaction' do
       Opener::Daemons::Transaction.should_receive(:reset_current)
 
-      -> { @daemon.report_exception(@error) }.should raise_error
+      -> { @daemon.report_exception(@error) }.should raise_error(StandardError)
     end
   end
 end

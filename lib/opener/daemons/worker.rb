@@ -67,7 +67,7 @@ module Opener
 
       ##
       # @param [String] output
-      # @return [AWS::S3::S3Object]
+      # @return [Aws::S3::Object]
       #
       def upload_output(output)
         object = uploader.upload(config.identifier, output, config.metadata)
@@ -83,7 +83,7 @@ module Opener
       ##
       # Sends the object's URL to the next callback URL.
       #
-      # @param [AWS::S3::S3Object] object
+      # @param [Aws::S3::Object] object
       #
       def submit_callbacks(object)
         urls      = config.callbacks.dup

@@ -7,12 +7,15 @@ describe Opener::Daemons::Uploader do
 
   context '#upload' do
     example 'upload a document to S3' do
+      SecureRandom.should_receive(:hex)
+        .and_return('123')
+
       @uploader.should_receive(:create).with(
-        %r{[a-zA-Z0-9]+/foo\.xml},
+        '123/foo.xml',
         'Hello',
         :metadata     => {:a => 10},
         :content_type => 'application/xml',
-        :acl          => :public_read
+        :acl          => 'public-read'
       )
 
       @uploader.upload('foo', 'Hello', :a => 10)
@@ -20,25 +23,20 @@ describe Opener::Daemons::Uploader do
   end
 
   context '#create' do
-    example 'return an S3Object' do
-      object = AWS::S3::S3Object.new('foo', 'bar')
+    example 'upload an object to S3' do
+      Opener::Daemons.stub(:output_bucket => 'foo')
 
-      AWS::S3::ObjectCollection.any_instance
-        .should_receive(:create)
-        .and_return(object)
+      bucket = Aws::S3::Bucket.new('foo')
 
-      @uploader.create('foo.xml').should == object
-    end
+      @uploader.s3
+        .should_receive(:bucket)
+        .with('foo')
+        .and_return(bucket)
 
-    example 'return an S3Object when versioning is enabled' do
-      object  = AWS::S3::S3Object.new('foo', 'bar')
-      version = AWS::S3::ObjectVersion.new(object, '123')
+      bucket.should_receive(:put_object)
+        .with(:key => 'foo', :body => 'bar', :content_type => 'text/plain')
 
-      AWS::S3::ObjectCollection.any_instance
-        .should_receive(:create)
-        .and_return(version)
-
-      @uploader.create('foo.xml').should == object
+      @uploader.create('foo', 'bar', :content_type => 'text/plain')
     end
   end
 end
