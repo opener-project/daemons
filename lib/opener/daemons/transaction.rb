@@ -48,7 +48,7 @@ module Opener
         @parameters = @parameters.merge(parameters)
 
         if Daemons.newrelic?
-          NewRelic::Agent.add_custom_parameters(parameters)
+          NewRelic::Agent.add_custom_attributes parameters
         end
       end
     end # Transaction
