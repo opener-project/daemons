@@ -138,14 +138,14 @@ module Opener
           __FILE__
         )
 
-        env = ENV.to_hash.merge(
+        env = {
           'INPUT_QUEUE'    => options[:input].to_s,
           'DAEMON_THREADS' => options[:threads].to_s,
           'OUTPUT_BUCKET'  => options[:bucket].to_s,
           'NRCONFIG'       => newrelic_config,
           'APP_ROOT'       => File.expand_path('../../../../', __FILE__),
           'APP_NAME'       => name
-        )
+        }.merge(ENV.to_hash)
 
         if !env['RAILS_ENV'] and env['RACK_ENV']
           env['RAILS_ENV'] = env['RACK_ENV']
