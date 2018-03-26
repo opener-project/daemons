@@ -8,6 +8,10 @@
             "description": "URL to the KAF document to process",
             "type": "string"
         },
+        "input": {
+            "description": "A Base64 representation of the gzip compressed input",
+            "type": "string"
+        },
 
         "identifier": {
             "description": "A unique identifier to associate with the document",
