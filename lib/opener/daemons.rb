@@ -27,6 +27,6 @@ require_relative 'daemons/transaction'
 
 require_relative 'daemons/minio'
 
-require_relative 'daemons/mapper'
 require_relative 'daemons/worker'
+require_relative 'daemons/mapper'
 require_relative 'daemons/daemon'

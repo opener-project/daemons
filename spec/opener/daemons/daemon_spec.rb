@@ -14,25 +14,6 @@ describe Opener::Daemons::Daemon do
     Thread.current[Opener::Daemons::Transaction::THREAD_KEY] = nil
   end
 
-  context '#complete' do
-    before do
-      @message = double(:message, :id => 123)
-    end
-
-    example 'log data to Syslog upon completion' do
-      Opener::Core::Syslog.should_receive(:info)
-        .with('Finished message 123')
-
-      @daemon.complete(@message, 'Done')
-    end
-
-    example 'reset the current transaction' do
-      Opener::Daemons::Transaction.should_receive(:reset_current)
-
-      @daemon.complete(@message, 'Done')
-    end
-  end
-
   context '#report_exception' do
     before do
       @error = StandardError.new('foo')

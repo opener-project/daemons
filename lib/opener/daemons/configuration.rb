@@ -19,8 +19,11 @@ module Opener
     #  @return [Hash]
     #
     class Configuration
-      attr_reader :component, :component_options, :input_url, :callbacks,
-        :metadata
+
+      attr_reader :component, :component_options
+
+      attr_reader :input, :input_url
+      attr_reader :callbacks, :metadata
 
       ##
       # @param [Class] component The component to use.
@@ -63,6 +66,7 @@ module Opener
       def component_instance
         return component.new(component_options)
       end
+
     end # Configuration
   end # Daemons
 end # Opener

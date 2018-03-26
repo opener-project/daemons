@@ -20,6 +20,8 @@ module Opener
     class Worker < Oni::Worker
       attr_reader :config, :uploader, :downloader, :callback_handler
 
+      INLINE_IO = !!ENV['INLINE_IO']
+
       include NewRelic::Agent::Instrumentation::ControllerInstrumentation
       include NewRelic::Agent::MethodTracer
 
@@ -31,6 +33,8 @@ module Opener
         @downloader       = Downloader.new
         @uploader         = Uploader.new
         @callback_handler = CallbackHandler.new
+        @input            = nil
+        @output           = nil
       end
 
       ##
@@ -42,10 +46,10 @@ module Opener
         add_transaction_attributes
 
         begin
-          output = run_component
-          object = upload_output(output)
-
-          submit_callbacks(object)
+          process_input
+          run_component
+          process_output
+          submit_callbacks
 
         # Unsupported languages are handled in a different manner as they can
         # occur quite often. In these cases we _do_ want the data to be sent
@@ -57,27 +61,32 @@ module Opener
       end
 
       ##
+      #
+      def process_input
+        if config.input
+          @input = Zlib.gunzip Base64.decode64 config.input
+        else
+          @input = downloader.download config.input_url
+        end
+      end
+
+      ##
       # @return [String]
       #
       def run_component
-        input = downloader.download(config.input_url)
-
-        return config.component_instance.run(input)
+        @output = config.component_instance.run @input
       end
 
       ##
       # @param [String] output
       # @return [Aws::S3::Object]
       #
-      def upload_output(output)
-        object = uploader.upload(config.identifier, output, config.metadata)
-
-        Core::Syslog.info(
-          "Wrote output to s3://#{Daemons.output_bucket}/#{object.key}",
-          config.metadata
-        )
-
-        return object
+      def process_output
+        if INLINE_IO
+          @next_input = Base64.encode64 Zlib.gzip @output
+        else
+          @object = uploader.upload config.identifier, @output, config.metadata
+        end
       end
 
       ##
@@ -85,17 +94,14 @@ module Opener
       #
       # @param [Aws::S3::Object] object
       #
-      def submit_callbacks(object)
-        urls      = config.callbacks.dup
-        next_url  = urls.shift
-        input_url = object.public_url.to_s
+      def submit_callbacks
+        urls     = config.callbacks.dup
+        next_url = urls.shift
 
-        callback_handler.post(
-          next_url,
-          :input_url  => input_url,
-          :identifier => config.identifier,
-          :callbacks  => urls,
-          :metadata   => config.metadata
+        callback_handler.post next_url, next_input_params.merge(
+          identifier: config.identifier,
+          callbacks:  urls,
+          metadata:   config.metadata,
         )
 
         Core::Syslog.info("Submitted response to #{next_url}", config.metadata)
@@ -107,11 +113,9 @@ module Opener
       def handle_unsupported_language
         last_url = config.callbacks.last
 
-        callback_handler.post(
-          last_url,
-          :input_url  => config.input_url,
-          :identifier => config.identifier,
-          :metadata   => config.metadata
+        callback_handler.post last_url, input_params.merge(
+          identifier: config.identifier,
+          metadata:   config.metadata,
         )
 
         Core::Syslog.info(
@@ -122,21 +126,37 @@ module Opener
 
       private
 
+      def input_params
+        if INLINE_IO
+          {input:     config.input}
+        else
+          {input_url: config.input_url}
+        end
+      end
+
+      def next_input_params
+        if INLINE_IO
+          {input:     @next_input}
+        else
+          {input_url: @object.public_url.to_s}
+        end
+      end
+
       def add_transaction_attributes
         Transaction.current.add_parameters(
-          :input_url  => config.input_url,
-          :identifier => config.identifier,
-          :callbacks  => config.callbacks,
-          :metadata   => config.metadata
+          input_url:  config.input_url,
+          identifier: config.identifier,
+          callbacks:  config.callbacks,
+          metadata:   config.metadata,
         )
       end
 
       if Daemons.newrelic?
-        add_transaction_tracer(:process, :category => :task)
+        add_transaction_tracer :process, category: :task
 
-        add_method_tracer(:run_component)
-        add_method_tracer(:upload_output)
-        add_method_tracer(:submit_callbacks)
+        add_method_tracer :run_component
+        add_method_tracer :process_output
+        add_method_tracer :submit_callbacks
       end
     end # Worker
   end # Daemons

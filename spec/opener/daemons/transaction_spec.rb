@@ -29,13 +29,5 @@ describe Opener::Daemons::Transaction do
       @transaction.parameters.should == {:a => 10, :b => 20}
     end
 
-    example 'add parameters to the New Relic transaction if this is enabled' do
-      Opener::Daemons.stub(:newrelic?).and_return(true)
-
-      NewRelic::Agent.should_receive(:add_custom_parameters)
-        .with(:a => 10)
-
-      @transaction.add_parameters(:a => 10)
-    end
   end
 end
