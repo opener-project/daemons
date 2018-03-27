@@ -25,8 +25,7 @@ module Opener
       #
       # @return [String]
       #
-      INPUT_SCHEMA_FILE = if Worker::INLINE_IO then 'inline_sqs_input.json' else 'sqs_input.json' end
-      INPUT_SCHEMA = File.join SCHEMA_DIRECTORY, INPUT_SCHEMA_FILE
+      INPUT_SCHEMA = File.join SCHEMA_DIRECTORY, 'sqs_input.json'
 
       ##
       # @param [Class] component

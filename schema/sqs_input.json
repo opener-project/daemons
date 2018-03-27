@@ -30,5 +30,5 @@
             "additionalProperties": true
         }
     },
-    "required": ["input_url", "callbacks"]
+    "required": ["callbacks"]
 }
