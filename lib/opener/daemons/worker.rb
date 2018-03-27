@@ -126,14 +126,20 @@ module Opener
 
       private
 
+      ##
+      # Preserve input for last callback
+      #
       def input_params
-        if INLINE_IO
-          {input:     config.input}
-        else
+        if config.input_url
           {input_url: config.input_url}
+        else
+          {input:     config.input}
         end
       end
 
+      ##
+      # Use generated output as new input
+      #
       def next_input_params
         if INLINE_IO
           {input:     @next_input}
