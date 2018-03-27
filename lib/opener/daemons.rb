@@ -15,6 +15,8 @@ require 'opener/core'
 require 'new_relic/control'
 require 'rollbar'
 
+require_relative 'daemons/ext/zlib'
+
 require_relative 'daemons/version'
 require_relative 'daemons/daemons'
 require_relative 'daemons/option_parser'
