@@ -65,6 +65,7 @@ module Opener
       def process_input
         if config.input
           @input = Zlib.gunzip Base64.decode64 config.input
+          @input.force_encoding 'UTF-8'
         else
           @input = downloader.download config.input_url
         end
