@@ -1,4 +1,4 @@
-require File.expand_path('../lib/opener/daemons/version', __FILE__)
+require_relative 'lib/opener/daemons/version'
 
 Gem::Specification.new do |spec|
   spec.name        = 'opener-daemons'
