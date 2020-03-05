@@ -9,7 +9,7 @@ describe Opener::Daemons::Worker do
     Class.new do
       def initialize *; end
 
-      def run input
+      def run input, options = {}
         OUTPUT
       end
     end
@@ -21,12 +21,13 @@ describe Opener::Daemons::Worker do
     end
 
     before do
+      @config_input = Base64.encode64(Zlib.gzip(INPUT))
       @config = Opener::Daemons::Configuration.new(
         component,
         {},
-        input:     Base64.encode64(Zlib.gzip(INPUT)),
+        input:     @config_input,
         callbacks: %w{http://foo.com},
-        metadata:  {:a => 1},
+        metadata:  {'a' => 1, 'custom_config' => {'abc' => 'def'}},
       )
       @worker = described_class.new @config
     end
@@ -50,6 +51,14 @@ describe Opener::Daemons::Worker do
 
         @worker.process
         expect(@worker.instance_variable_get :@object).to eq @s3_object
+      end
+
+      example 'submit custom_config to component' do
+        expect_any_instance_of(component).to receive(:run)
+          .with(INPUT, @config.metadata['custom_config'])
+          .and_call_original
+
+        @worker.process
       end
 
       example 'submit documents with unsupported languages to the last callback' do
@@ -121,7 +130,7 @@ describe Opener::Daemons::Worker do
 
     context '#process' do
       example 'process the input using the component' do
-        component.any_instance.should_receive(:run).with INPUT
+        component.any_instance.should_receive(:run).with INPUT, nil
 
         @worker.stub(:submit_callbacks)
 

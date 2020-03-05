@@ -75,7 +75,7 @@ module Opener
       # @return [String]
       #
       def run_component
-        @output = config.component_instance.run @input, config.metadata.custom_config
+        @output = config.component_instance.run @input, config.metadata['custom_config']
       end
 
       ##
