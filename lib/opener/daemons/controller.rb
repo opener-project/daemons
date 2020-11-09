@@ -86,9 +86,9 @@ module Opener
           setup_env(options),
           exec_path,
           *argv,
-          :out => :close,
-          :err => :close,
-          :in  => :close
+          out: '/dev/null',
+          err: '/dev/null',
+          in:  '/dev/null'
         )
 
         pidfile.write(pid)
