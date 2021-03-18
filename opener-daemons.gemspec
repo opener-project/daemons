@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'opener-core', '~> 2.3'
   spec.add_dependency 'newrelic_rpm'
   spec.add_dependency 'json-schema'
-  spec.add_dependency 'rollbar', '~> 1.0'
+  spec.add_dependency 'rollbar', '~> 3.0'
   spec.add_dependency 'oni', '~> 4.0'
   spec.add_dependency 'oga', '~> 1.0'
 
