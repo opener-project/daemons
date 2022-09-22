@@ -19,6 +19,8 @@ module Opener
       # The name of the SQS input queue to use.
       set :queue_name, proc { Daemons.input_queue }
 
+      # The amount of workers to use.
+      set :workers, ENV['DAEMON_WORKERS']&.to_i || 1
       # The amount of threads to use.
       set :threads, proc { Daemons.daemon_threads }
 
